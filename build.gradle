@@ -1,16 +1,16 @@
 plugins {
     // Spring boot & dependency management:
     // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/
-    id 'org.springframework.boot' version '3.5.0'
+    id 'org.springframework.boot' version '3.1.5'
     // https://docs.spring.io/dependency-management-plugin/docs/current-SNAPSHOT/reference/html/
-    id "io.spring.dependency-management" version "1.1.7"
+    id "io.spring.dependency-management" version "1.1.6"
     // Lombok generates getter and setter and more. https://projectlombok.org/
     // check for new versions here: https://plugins.gradle.org/plugin/io.freefair.lombok
-    id "io.freefair.lombok" version "8.13.1"
+    id "io.freefair.lombok" version "8.4"
     // Release tagging with `./gradlew release`
     // Check for new versions here: https://plugins.gradle.org/plugin/net.researchgate.release
     // Usage: https://github.com/researchgate/gradle-release
-    id 'net.researchgate.release' version '3.1.0'
+    id 'net.researchgate.release' version '3.0.2'
 
     id 'java'
     // for comfortable run command with arguments
@@ -19,21 +19,22 @@ plugins {
     id 'jacoco'
     // Adds coveralls task for CI to send results to the coveralls service.
     id "com.github.kt3k.coveralls" version "2.12.2"
-    id "org.owasp.dependencycheck" version "12.1.2"
+    id "org.owasp.dependencycheck" version "9.0.9"
     // include build and git information via Spring Actuator
-    id "com.gorylenko.gradle-git-properties" version "2.5.0"
+    id "com.gorylenko.gradle-git-properties" version "2.4.2"
 }
 
 lombok {
     // check here for new versions: https://projectlombok.org/download
-    version = '1.18.38'
+    version = '1.18.30'
 }
 
 jacoco {
     // check here for new versions: https://www.jacoco.org/jacoco/
-    toolVersion = "0.8.13"
+    toolVersion = "0.8.11"
 }
 
+archivesBaseName = 'TypedPIDMaker'
 description = "A gateway to manage PIDs containing profiles and typed attributes."
 group = 'edu.kit.datamanager'
 
@@ -48,16 +49,18 @@ repositories {
 }
 
 ext {
-    springDocVersion  = '2.8.8'
+    springDocVersion  = '2.6.0'
 }
 
 dependencies {
     // Due to the spring boot gradle plugin, we can omit versions in org.springframework.*
     // dependencies. It will automatically choose the fitting ones.
-    implementation("edu.kit.datamanager:service-base:1.3.4")
-    implementation("edu.kit.datamanager:repo-core:1.2.5")
-    // com.google.common, LoadingCache
-    implementation("com.google.guava:guava:33.4.8-jre")
+    implementation("edu.kit.datamanager:service-base:1.2.0")
+    implementation("edu.kit.datamanager:repo-core:1.2.1")
+    // AsyncLoadingCache https://github.com/ben-manes/caffeine
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    // Required by Spring/Javers at runtime
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // spring core, e.g. @EnableJpaRepositories
     implementation "org.springframework:spring-core"
@@ -71,8 +74,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-validation"
     // required for messaging
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    // @EnableJPARepositories, JTA related things which are needed at runtime
-    implementation "jakarta.transaction:jakarta.transaction-api:2.0.1"
+    // @EnableJPARepositories
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
     // springdoc / openapi / swagger
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}"
@@ -87,9 +89,9 @@ dependencies {
     implementation('org.apache.httpcomponents:httpclient:4.5.14')
     implementation('org.apache.httpcomponents:httpclient-cache:4.5.14')
 
-    implementation("net.handle:handle-client:9.3.2")
+    implementation("net.handle:handle-client:9.3.1")
 
-    testImplementation(platform('org.junit:junit-bom:5.13.1'))
+    testImplementation(platform('org.junit:junit-bom:5.10.3'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
     testImplementation('org.junit.jupiter:junit-jupiter-params')
 
@@ -98,7 +100,7 @@ dependencies {
     testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
     testImplementation("org.springframework.security:spring-security-test")
 
-    testImplementation("com.jayway.jsonpath:json-path:2.9.0")
+    testImplementation("com.jayway.jsonpath:json-path:2.8.0")
 }
 
 application {
@@ -115,7 +117,7 @@ bootJar {
         // Docs:
         // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.configuring.main-class
         // https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/loader/PropertiesLauncher.html
-        attributes 'Main-Class': 'org.springframework.boot.loader.launch.PropertiesLauncher'
+        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
     }
 
     // Make the Typed PID Maker executable without `java -jar`
@@ -139,7 +141,7 @@ java {
     toolchain {
         // "By default, Gradle uses the same Java version for running
         // Gradle itself and building JVM projects."
-        // We can enforce a specific version here. By default, we do not do this
+        // We can enforce a specific version here. By defult, we do not do this
         // to enable the CI to test with different JDKs.
         // https://docs.gradle.org/current/userguide/toolchains.html#toolchains
         //languageVersion = JavaLanguageVersion.of(jdkVersion)
@@ -151,22 +153,14 @@ test {
     environment "spring.config.location", "classpath:/test/"
     // for junit5
     useJUnitPlatform()
-    if (System.getProperty("profile") == "verbose") {
-        println "Tests will have verbose output"
-        testLogging {
-            // tests are never "up-to-date", always print everything
-            outputs.upToDateWhen {false}
-            // show stdio when tests are running
-            showStandardStreams = true
-            // for junit5
-            events "passed", "skipped", "failed"
-        }
-    } else {
-        println "Test will have compact output"
-        testLogging {
-            // for junit5
-            events "passed", "skipped", "failed"
-        }
+
+    testLogging {
+        // tests are never "up-to-date", always print everything
+        outputs.upToDateWhen {false}
+        // show stdio when tests are running
+        showStandardStreams = true
+        // for junit5
+        events "passed", "skipped", "failed"
     }
 }
 
@@ -175,7 +169,7 @@ javadoc {
     doLast {
         copy {
             from "src/main/javadoc"
-            into "$rootProject.layout.buildDirectory/docs/javadoc"
+            into "$buildDir/docs/javadoc"
         }
     }
 }
@@ -204,13 +198,6 @@ springBoot {
     buildInfo()
 }
 
-// make sure that git properties plugin does not fail
-// on build without access to the git repo information
-// (zip download etc.)
-gitProperties {
-    failOnNoGitDirectory = false
-}
-
 release {
     // define tag pattern (tags have to start with 'v')
     tagTemplate = 'v${version}'
@@ -219,9 +206,7 @@ release {
     }
 }
 
-tasks.withType(Jar).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Tar).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Copy).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Zip).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-
-apply from: 'gradle/updateCff.gradle'
+tasks.withType(Jar).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Tar).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Copy).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Zip).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
