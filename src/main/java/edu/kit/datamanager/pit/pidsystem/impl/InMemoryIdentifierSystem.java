@@ -14,6 +14,7 @@ import edu.kit.datamanager.pit.configuration.ApplicationProperties;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.pidsystem.IIdentifierSystem;
 
+import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnExpression(
     "#{ '${pit.pidsystem.implementation}' eq T(edu.kit.datamanager.pit.configuration.ApplicationProperties.IdentifierSystemImpl).IN_MEMORY.name() }"
 )
+@Observed
 public class InMemoryIdentifierSystem implements IIdentifierSystem {
 
     private static final Logger LOG = LoggerFactory.getLogger(InMemoryIdentifierSystem.class);

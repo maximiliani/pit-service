@@ -4,6 +4,7 @@ import edu.kit.datamanager.pit.common.ExternalServiceException;
 import edu.kit.datamanager.pit.common.RecordValidationException;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.pitservice.IValidationStrategy;
+import io.micrometer.observation.annotation.Observed;
 
 /**
  * This validation strategy will **not** do any validation.
@@ -11,6 +12,7 @@ import edu.kit.datamanager.pit.pitservice.IValidationStrategy;
 public class NoValidationStrategy implements IValidationStrategy {
 
     @Override
+    @Observed
     public void validate(PIDRecord pidRecord) throws RecordValidationException, ExternalServiceException {
         // No validation will take place.
     }

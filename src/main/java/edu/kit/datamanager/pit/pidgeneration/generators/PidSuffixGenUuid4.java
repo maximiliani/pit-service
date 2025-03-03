@@ -4,10 +4,12 @@ import java.util.UUID;
 
 import edu.kit.datamanager.pit.pidgeneration.PidSuffix;
 import edu.kit.datamanager.pit.pidgeneration.PidSuffixGenerator;
+import io.micrometer.observation.annotation.Observed;
 
 /**
  * Generates a PID suffix based on a UUID4.
  */
+@Observed
 public class PidSuffixGenUuid4 implements PidSuffixGenerator {
 
     @Override

@@ -20,6 +20,8 @@ import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
 import edu.kit.datamanager.security.filter.NoAuthenticationFilter;
 
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.aop.ObservedAspect;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +78,7 @@ public class WebSecurityConfig {
           .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
           .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
           .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/actuator/**").permitAll()
           .requestMatchers(HttpMethod.GET, "/v3/**").permitAll()
           // only the actual API is protected
           .requestMatchers("/api/v1/**").authenticated()
@@ -139,5 +142,10 @@ public class WebSecurityConfig {
     final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", corsConfig);
     return new CorsFilter(source);
+  }
+
+  @Bean
+  ObservedAspect observedAspect(ObservationRegistry observationRegistry) {
+    return new ObservedAspect(observationRegistry);
   }
 }

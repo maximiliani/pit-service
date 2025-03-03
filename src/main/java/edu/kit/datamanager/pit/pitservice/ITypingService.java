@@ -6,6 +6,8 @@ import edu.kit.datamanager.pit.domain.Operations;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 
 import edu.kit.datamanager.pit.pidsystem.IIdentifierSystem;
+import io.micrometer.observation.annotation.Observed;
+import org.springframework.stereotype.Service;
 
 /**
  * Core interface for clients to contact. Implementations will provide the

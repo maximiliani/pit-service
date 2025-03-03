@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
+import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
  * - validates all available attributes
  * - fails if an attribute is not defined within the profile
  */
+@Observed
 public class EmbeddedStrictValidatorStrategy implements IValidationStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedStrictValidatorStrategy.class);

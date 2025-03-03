@@ -15,6 +15,7 @@ import edu.kit.datamanager.pit.typeregistry.RegisteredProfile;
 import edu.kit.datamanager.pit.typeregistry.RegisteredProfileAttribute;
 import edu.kit.datamanager.pit.typeregistry.schema.SchemaInfo;
 import edu.kit.datamanager.pit.typeregistry.schema.SchemaSetGenerator;
+import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.ClientHttpResponse;
@@ -33,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 
+@Observed
 public class TypeApi implements ITypeRegistry {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypeApi.class);

@@ -20,6 +20,7 @@ import edu.kit.datamanager.pit.domain.PIDRecord;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 
+import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * through a type registry and an identifier system.
  *
  */
+@Observed
 public class TypingService implements ITypingService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypingService.class);

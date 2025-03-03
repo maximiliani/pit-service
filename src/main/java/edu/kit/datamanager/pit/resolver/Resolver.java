@@ -5,6 +5,7 @@ import edu.kit.datamanager.pit.common.PidNotFoundException;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.pidsystem.impl.handle.HandleBehavior;
 import edu.kit.datamanager.pit.pitservice.ITypingService;
+import io.micrometer.observation.annotation.Observed;
 import net.handle.api.HSAdapter;
 import net.handle.api.HSAdapterFactory;
 import net.handle.hdllib.HandleException;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
  * <p>
  * - Handle System
  */
+@Observed
 public class Resolver {
     /**
      * The configured system to which we usually have write access.

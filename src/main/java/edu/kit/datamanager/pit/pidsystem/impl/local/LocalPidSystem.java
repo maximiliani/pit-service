@@ -13,6 +13,7 @@ import edu.kit.datamanager.pit.configuration.ApplicationProperties;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.pidsystem.IIdentifierSystem;
 
+import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
     "#{ '${pit.pidsystem.implementation}' eq T(edu.kit.datamanager.pit.configuration.ApplicationProperties.IdentifierSystemImpl).LOCAL.name() }"
 )
 @Transactional
+@Observed
 public class LocalPidSystem implements IIdentifierSystem {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalPidSystem.class);

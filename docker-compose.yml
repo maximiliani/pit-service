@@ -1,0 +1,40 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+  zipkin:
+    image: ghcr.io/openzipkin/zipkin-slim:${TAG:-latest}
+    container_name: zipkin
+    # Environment settings are defined here https://github.com/openzipkin/zipkin/blob/master/zipkin-server/README.md#environment-variables
+    environment:
+      - STORAGE_TYPE=mem
+      # Uncomment to enable self-tracing
+      # - SELF_TRACING_ENABLED=true
+      # Uncomment to increase heap size
+      # - JAVA_OPTS=-Xms128m -Xmx128m -XX:+ExitOnOutOfMemoryError
+    ports:
+      # Port used for the Zipkin UI and HTTP Api
+      - 9411:9411
+    # Uncomment to enable debug logging
+    # command: --logging.level.zipkin2=DEBUG
+volumes:
+  prom_data:
