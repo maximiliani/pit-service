@@ -22,9 +22,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: kit-data-manager/Typed-PID-Maker # repo name != app name in our case!
-  jdk: 21
-  distro: 'temurin'
-  DOCKER_PLATFORMS: linux/amd64,linux/arm64
 
 # Two jobs for creating and pushing Docker image
 # - build-and-push-image -> triggered by commits on main and tagging with semantic version (e.g.: v1.2.3)
@@ -38,21 +35,12 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+        matrix:
+          platform: [linux/amd64, linux/arm64, linux/arm64/v8, linux/ppc64le, linux/riscv64, linux/s390x, windows/amd64]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up openJDK version
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.jdk }}
-          distribution: ${{ env.distro }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build and Test with Gradle
-        run: ./gradlew -Dprofile=verbose build
 
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
@@ -104,13 +92,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile-reuse-local-build
+          file: ./docker/Dockerfile-build-in-image
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-
+          platforms: ${{ matrix.platform }}
   build-and-push-image-of-branch:
     runs-on: ubuntu-latest
     if: contains(github.ref_name, '-v')
@@ -133,18 +120,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up openJDK version
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.jdk }}
-          distribution: ${{ env.distro }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build and Test with Gradle
-        run: ./gradlew -Dprofile=verbose build
 
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
@@ -196,9 +171,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile-reuse-local-build
+          file: ./docker/Dockerfile-build-in-image
           push: true
           tags: ${{ steps.meta-branch.outputs.tags }}
           labels: ${{ steps.meta-branch.outputs.labels }}
-          annotations: ${{ steps.meta-branch.outputs.annotations }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          platforms: ${{ matrix.platform }}
