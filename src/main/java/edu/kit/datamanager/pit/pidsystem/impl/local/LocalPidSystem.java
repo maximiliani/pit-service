@@ -2,7 +2,6 @@ package edu.kit.datamanager.pit.pidsystem.impl.local;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import edu.kit.datamanager.pit.common.ExternalServiceException;
 import edu.kit.datamanager.pit.common.InvalidConfigException;
@@ -13,6 +12,8 @@ import edu.kit.datamanager.pit.configuration.ApplicationProperties;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.pidsystem.IIdentifierSystem;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.annotation.Observed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,8 +56,14 @@ public class LocalPidSystem implements IIdentifierSystem {
 
     private static final String PREFIX = "sandboxed/";
 
-    public LocalPidSystem() {
+    public LocalPidSystem(MeterRegistry meterRegistry) {
         LOG.warn("Using local identifier system to store PIDs. REGISTERED PIDs ARE NOT PERMANENTLY OR PUBLICLY STORED.");
+
+        Gauge.builder("stored-records", this::countStoredRecords).description("Number of stored records").register(meterRegistry);
+    }
+
+    private long countStoredRecords() {
+        return this.db.count();
     }
 
     /**
