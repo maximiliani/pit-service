@@ -1,16 +1,16 @@
 plugins {
     // Spring boot & dependency management:
     // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/
-    id 'org.springframework.boot' version '3.1.5'
+    id 'org.springframework.boot' version '3.4.2'
     // https://docs.spring.io/dependency-management-plugin/docs/current-SNAPSHOT/reference/html/
-    id "io.spring.dependency-management" version "1.1.6"
+    id "io.spring.dependency-management" version "1.1.7"
     // Lombok generates getter and setter and more. https://projectlombok.org/
     // check for new versions here: https://plugins.gradle.org/plugin/io.freefair.lombok
-    id "io.freefair.lombok" version "8.4"
+    id "io.freefair.lombok" version "8.12"
     // Release tagging with `./gradlew release`
     // Check for new versions here: https://plugins.gradle.org/plugin/net.researchgate.release
     // Usage: https://github.com/researchgate/gradle-release
-    id 'net.researchgate.release' version '3.0.2'
+    id 'net.researchgate.release' version '3.1.0'
 
     id 'java'
     // for comfortable run command with arguments
@@ -19,7 +19,7 @@ plugins {
     id 'jacoco'
     // Adds coveralls task for CI to send results to the coveralls service.
     id "com.github.kt3k.coveralls" version "2.12.2"
-    id "org.owasp.dependencycheck" version "9.0.9"
+    id "org.owasp.dependencycheck" version "12.0.1"
     // include build and git information via Spring Actuator
     id "com.gorylenko.gradle-git-properties" version "2.4.2"
 }
@@ -34,7 +34,6 @@ jacoco {
     toolVersion = "0.8.11"
 }
 
-archivesBaseName = 'TypedPIDMaker'
 description = "A gateway to manage PIDs containing profiles and typed attributes."
 group = 'edu.kit.datamanager'
 
@@ -49,18 +48,16 @@ repositories {
 }
 
 ext {
-    springDocVersion  = '2.6.0'
+    springDocVersion = '2.8.9'
 }
 
 dependencies {
     // Due to the spring boot gradle plugin, we can omit versions in org.springframework.*
     // dependencies. It will automatically choose the fitting ones.
-    implementation("edu.kit.datamanager:service-base:1.2.0")
-    implementation("edu.kit.datamanager:repo-core:1.2.1")
+    implementation("edu.kit.datamanager:service-base:1.3.3")
+    implementation("edu.kit.datamanager:repo-core:1.2.5")
     // AsyncLoadingCache https://github.com/ben-manes/caffeine
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
-    // Required by Spring/Javers at runtime
-    implementation 'com.google.code.gson:gson:2.10.1'
 
     // spring core, e.g. @EnableJpaRepositories
     implementation "org.springframework:spring-core"
@@ -74,7 +71,8 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-validation"
     // required for messaging
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    // @EnableJPARepositories
+    // @EnableJPARepositories, JTA related things which are needed at runtime
+    implementation "jakarta.transaction:jakarta.transaction-api:2.0.1"
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
     // springdoc / openapi / swagger
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}"
@@ -84,15 +82,15 @@ dependencies {
 
     // More flexibility when (de-)serializing json:
     //implementation("com.monitorjbl:spring-json-view:1.1.0")
-	implementation("com.github.everit-org.json-schema:org.everit.json.schema:1.14.4")
-    
+    implementation("com.github.everit-org.json-schema:org.everit.json.schema:1.14.4")
+
     implementation('org.apache.httpcomponents:httpclient:4.5.14')
     implementation('org.apache.httpcomponents:httpclient-cache:4.5.14')
 
     implementation("net.handle:handle-client:9.3.1")
 
-    testImplementation(platform('org.junit:junit-bom:5.10.3'))
-	testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation(platform('org.junit:junit-bom:5.11.4'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
     testImplementation('org.junit.jupiter:junit-jupiter-params')
 
     testImplementation("org.springframework:spring-test")
@@ -100,12 +98,28 @@ dependencies {
     testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
     testImplementation("org.springframework.security:spring-security-test")
 
-    testImplementation("com.jayway.jsonpath:json-path:2.8.0")
+    testImplementation("com.jayway.jsonpath:json-path:2.9.0")
 }
 
 application {
     mainClass = 'edu.kit.datamanager.pit.Application'
 }
+
+/*
+ * Copyright (c) 2025 Karlsruhe Institute of Technology.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 // Makes executable jar file.
 // Available function available through Spring Boot Gradle Plugin.
@@ -117,7 +131,7 @@ bootJar {
         // Docs:
         // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/#packaging-executable.configuring.main-class
         // https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/loader/PropertiesLauncher.html
-        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
+        attributes 'Main-Class': 'org.springframework.boot.loader.launch.PropertiesLauncher'
     }
 
     // Make the Typed PID Maker executable without `java -jar`
@@ -141,7 +155,7 @@ java {
     toolchain {
         // "By default, Gradle uses the same Java version for running
         // Gradle itself and building JVM projects."
-        // We can enforce a specific version here. By defult, we do not do this
+        // We can enforce a specific version here. By default, we do not do this
         // to enable the CI to test with different JDKs.
         // https://docs.gradle.org/current/userguide/toolchains.html#toolchains
         //languageVersion = JavaLanguageVersion.of(jdkVersion)
@@ -153,14 +167,22 @@ test {
     environment "spring.config.location", "classpath:/test/"
     // for junit5
     useJUnitPlatform()
-
-    testLogging {
-        // tests are never "up-to-date", always print everything
-        outputs.upToDateWhen {false}
-        // show stdio when tests are running
-        showStandardStreams = true
-        // for junit5
-        events "passed", "skipped", "failed"
+    if (System.getProperty("profile") == "verbose") {
+        println "Tests will have verbose output"
+        testLogging {
+            // tests are never "up-to-date", always print everything
+            outputs.upToDateWhen { false }
+            // show stdio when tests are running
+            showStandardStreams = true
+            // for junit5
+            events "passed", "skipped", "failed"
+        }
+    } else {
+        println "Test will have compact output"
+        testLogging {
+            // for junit5
+            events "passed", "skipped", "failed"
+        }
     }
 }
 
@@ -169,7 +191,7 @@ javadoc {
     doLast {
         copy {
             from "src/main/javadoc"
-            into "$buildDir/docs/javadoc"
+            into "$rootProject.layout.buildDirectory/docs/javadoc"
         }
     }
 }
@@ -182,15 +204,15 @@ jacocoTestReport {
     afterEvaluate {
         //exclude some classes/package from code coverage report
         classDirectories.setFrom(files(classDirectories.files.collect {
-                    fileTree(dir: it, exclude: [\
-            'edu/kit/datamanager/pit/configuration/**', \
-            'edu/kit/datamanager/pit/web/converter/**', \
-            'edu/kit/datamanager/pit/web/ExtendedErrorAttributes**', \
-            'edu/kit/datamanager/pit/web/UncontrolledExceptionHandler**', \
-            'edu/kit/datamanager/pit/common/**', \
-            'edu/kit/datamanager/pit/Application*'
-                        ])
-                }))
+            fileTree(dir: it, exclude: [\
+            'edu/kit/datamanager/pit/configuration/**',     \
+                'edu/kit/datamanager/pit/web/converter/**',     \
+                'edu/kit/datamanager/pit/web/ExtendedErrorAttributes**',     \
+                'edu/kit/datamanager/pit/web/UncontrolledExceptionHandler**',     \
+                'edu/kit/datamanager/pit/common/**',     \
+                'edu/kit/datamanager/pit/Application*'
+            ])
+        }))
     }
 }
 
@@ -206,7 +228,7 @@ release {
     }
 }
 
-tasks.withType(Jar).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Tar).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Copy).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
-tasks.withType(Zip).all { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Jar).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Tar).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Copy).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
+tasks.withType(Zip).configureEach { duplicatesStrategy(DuplicatesStrategy.EXCLUDE) }
