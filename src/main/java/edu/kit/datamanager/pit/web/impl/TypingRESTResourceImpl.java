@@ -36,6 +36,12 @@ import edu.kit.datamanager.pit.web.TabulatorPaginationFormat;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.observation.annotation.Observed;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.stream.Streams;
 import org.apache.http.client.cache.HeaderConstants;
@@ -59,6 +65,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @RestController
+@Observed
 public class TypingRESTResourceImpl implements ITypingRestResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypingRESTResourceImpl.class);
@@ -85,6 +92,9 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
     }
 
     @Override
+    @Observed(name = "createPIDs", contextualName = "createPIDs")
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     public ResponseEntity<BatchRecordResponse> createPIDs(
             List<PIDRecord> rec,
             boolean dryrun,
@@ -202,7 +212,10 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
      * @throws RecordValidationException if the same internal PID is used for multiple records
      * @throws ExternalServiceException  if the PID generation fails
      */
-    private Map<String, String> generatePIDMapping(List<PIDRecord> rec, boolean dryrun) throws RecordValidationException, ExternalServiceException {
+    @WithSpan
+    @Timed
+    @Counted
+    private Map<String, String> generatePIDMapping(@SpanAttribute List<PIDRecord> rec, @SpanAttribute boolean dryrun) throws RecordValidationException, ExternalServiceException {
         Map<String, String> pidMappings = new HashMap<>();
         for (PIDRecord pidRecord : rec) {
             String internalPID = pidRecord.getPid(); // the internal PID is the one given by the user
@@ -235,7 +248,10 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
      * @throws RecordValidationException as a possible validation outcome
      * @throws ExternalServiceException  as a possible validation outcome
      */
-    private List<PIDRecord> applyMappingsToRecordsAndValidate(List<PIDRecord> rec, Map<String, String> pidMappings, String prefix) throws RecordValidationException, ExternalServiceException {
+    @WithSpan
+    @Timed
+    @Counted
+    private List<PIDRecord> applyMappingsToRecordsAndValidate(@SpanAttribute List<PIDRecord> rec, @SpanAttribute Map<String, String> pidMappings, @SpanAttribute String prefix) throws RecordValidationException, ExternalServiceException {
         List<PIDRecord> validatedRecords = new ArrayList<>();
         for (PIDRecord pidRecord : rec) {
 
@@ -301,11 +317,17 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
         return ResponseEntity.status(HttpStatus.CREATED).eTag(quotedEtag(pidRecord)).body(pidRecord);
     }
 
-    private boolean hasPid(PIDRecord pidRecord) {
+    @WithSpan
+    @Timed
+    @Counted
+    private boolean hasPid(@SpanAttribute PIDRecord pidRecord) {
         return pidRecord.getPid() != null && !pidRecord.getPid().isBlank();
     }
 
-    private void setPid(PIDRecord pidRecord) {
+    @WithSpan
+    @Timed
+    @Counted
+    private void setPid(@SpanAttribute PIDRecord pidRecord) {
         boolean hasCustomPid = hasPid(pidRecord);
         boolean allowsCustomPids = pidGenerationProperties.isCustomClientPidsEnabled();
 
@@ -400,7 +422,10 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
      *               If it does not exist, it will be created with both timestamps
      *               (created and modified) being the same.
      */
-    private void storeLocally(String pid, boolean update) {
+    @WithSpan
+    @Timed
+    @Counted
+    private void storeLocally(@SpanAttribute String pid, @SpanAttribute boolean update) {
         Instant now = Instant.now();
         Optional<KnownPid> oldPid = localPidStorage.findByPid(pid);
         if (oldPid.isEmpty()) {
@@ -412,7 +437,10 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
         }
     }
 
-    private String getContentPathFromRequest(String lastPathElement, WebRequest request) {
+    @WithSpan
+    @Timed
+    @Counted
+    private String getContentPathFromRequest(@SpanAttribute String lastPathElement, @SpanAttribute WebRequest request) {
         String requestedUri = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,
                 RequestAttributes.SCOPE_REQUEST);
         if (requestedUri == null) {
@@ -441,7 +469,10 @@ public class TypingRESTResourceImpl implements ITypingRestResource {
         return ResponseEntity.ok().eTag(quotedEtag(pidRecord)).body(pidRecord);
     }
 
-    private void saveToElastic(PIDRecord rec) {
+    @WithSpan
+    @Timed
+    @Counted
+    private void saveToElastic(@SpanAttribute PIDRecord rec) {
         this.elastic.ifPresent(
                 database -> database.save(
                         new PidRecordElasticWrapper(rec, typingService.getOperations())

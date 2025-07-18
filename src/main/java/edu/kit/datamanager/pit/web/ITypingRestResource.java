@@ -18,6 +18,11 @@ package edu.kit.datamanager.pit.web;
 import edu.kit.datamanager.pit.domain.PIDRecord;
 import edu.kit.datamanager.pit.domain.SimplePidRecord;
 import edu.kit.datamanager.pit.pidlog.KnownPid;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.observation.annotation.Observed;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -48,6 +53,8 @@ import java.util.List;
 @RequestMapping(value = "/api/v1/pit")
 @Schema(description = "PID Information Types API")
 @Tag(name = "PID Management", description = "PID Information Types API")
+@CrossOrigin(origins = "*", maxAge = 3600)
+@Observed
 public interface ITypingRestResource {
 
     @PostMapping(
@@ -81,11 +88,14 @@ public interface ITypingRestResource {
             @ApiResponse(responseCode = "503", description = "Communication to required external service failed.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Server error. See body for details.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<BatchRecordResponse> createPIDs(
-            @RequestBody final List<PIDRecord> rec,
+            @RequestBody @SpanAttribute final List<PIDRecord> rec,
 
             @Parameter(description = "If true, only validation will be done and no PIDs will be created. No data will be changed and no services will be notified.")
             @RequestParam(name = "dryrun", required = false, defaultValue = "false")
+            @SpanAttribute
             boolean dryrun,
 
             final WebRequest request,
@@ -133,8 +143,10 @@ public interface ITypingRestResource {
             @ApiResponse(responseCode = "503", description = "Communication to required external service failed.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Server error. See body for details.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<PIDRecord> createPID(
-            @RequestBody final PIDRecord rec,
+            @RequestBody @SpanAttribute final PIDRecord rec,
 
             @Parameter(
                     description = "If true, only validation will be done" +
@@ -142,6 +154,7 @@ public interface ITypingRestResource {
                             " and no services will be notified."
             )
             @RequestParam(name = "dryrun", required = false, defaultValue = "false")
+            @SpanAttribute
             boolean dryrun,
 
             final WebRequest request,
@@ -186,8 +199,10 @@ public interface ITypingRestResource {
             @ApiResponse(responseCode = "503", description = "Communication to required external service failed.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Server error. See body for details.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<PIDRecord> updatePID(
-            @RequestBody final PIDRecord rec,
+            @RequestBody @SpanAttribute final PIDRecord rec,
 
             @Parameter(
                     description = "If true, no PID will be updated. Only" +
@@ -197,9 +212,10 @@ public interface ITypingRestResource {
                             " notified."
             )
             @RequestParam(name = "dryrun", required = false, defaultValue = "false")
+            @SpanAttribute
             boolean dryrun,
 
-            final WebRequest request,
+            @SpanAttribute final WebRequest request,
             final HttpServletResponse response,
             final UriComponentsBuilder uriBuilder
     ) throws IOException;
@@ -227,6 +243,8 @@ public interface ITypingRestResource {
             @ApiResponse(responseCode = "503", description = "Communication to required external service failed.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Server error. See body for details.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<PIDRecord> getRecord(
             @Parameter(
                     description = "If true, validation will be run on the" +
@@ -234,9 +252,10 @@ public interface ITypingRestResource {
                             " returned. On success, the PID will be resolved."
             )
             @RequestParam(name = "validation", required = false, defaultValue = "false")
+            @SpanAttribute
             boolean validation,
 
-            final WebRequest request,
+            @SpanAttribute final WebRequest request,
             final HttpServletResponse response,
             final UriComponentsBuilder uriBuilder
     ) throws IOException;
@@ -263,8 +282,10 @@ public interface ITypingRestResource {
             }
     )
     @GetMapping(path = "known-pid/**")
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<KnownPid> findByPid(
-            final WebRequest request,
+            @SpanAttribute final WebRequest request,
             final HttpServletResponse response,
             final UriComponentsBuilder uriBuilder
     ) throws IOException;
@@ -288,6 +309,8 @@ public interface ITypingRestResource {
     )
     @GetMapping(path = "known-pid")
     @PageableAsQueryParam
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<List<KnownPid>> findAll(
             @Parameter(name = "created_after", description = "The UTC time of the earliest creation timestamp of a returned PID.")
             @RequestParam(name = "created_after", required = false)
@@ -309,7 +332,7 @@ public interface ITypingRestResource {
             @PageableDefault(sort = {"modified"}, direction = Sort.Direction.ASC)
             Pageable pageable,
 
-            WebRequest request,
+            @SpanAttribute WebRequest request,
 
             HttpServletResponse response,
 
@@ -335,6 +358,8 @@ public interface ITypingRestResource {
     )
     @GetMapping(path = "known-pid", produces = {"application/tabulator+json"}, headers = "Accept=application/tabulator+json")
     @PageableAsQueryParam
+    @WithSpan(kind = SpanKind.SERVER)
+    @Timed
     ResponseEntity<TabulatorPaginationFormat<KnownPid>> findAllForTabular(
             @Parameter(name = "created_after", description = "The UTC time of the earliest creation timestamp of a returned PID.")
             @RequestParam(name = "created_after", required = false)
@@ -356,7 +381,7 @@ public interface ITypingRestResource {
             @PageableDefault(sort = {"modified"}, direction = Sort.Direction.ASC)
             Pageable pageable,
 
-            WebRequest request,
+            @SpanAttribute WebRequest request,
 
             HttpServletResponse response,
 

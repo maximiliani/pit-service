@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Karlsruhe Institute of Technology.
+ * Copyright (c) 2025 Karlsruhe Institute of Technology.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package edu.kit.datamanager.pit.elasticsearch;
 
+import io.micrometer.observation.annotation.Observed;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
  * Elastic repository for indexing PID records.
  */
 @ConditionalOnProperty(prefix = "repo.search", name = "enabled", havingValue = "true")
+@Observed
 public interface PidRecordElasticRepository extends ElasticsearchRepository<PidRecordElasticWrapper, String> {
 
     Page<PidRecordElasticWrapper> findByPid(String pid, Pageable pageable);

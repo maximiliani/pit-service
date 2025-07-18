@@ -1,0 +1,109 @@
+// Grafana Alloy Configuration for Typed PID Maker
+// This uses Alloy's native configuration format, not OpenTelemetry Collector format
+
+// File log collection
+loki.source.file "app_logs_tpm" {
+  targets = [
+    {__path__ = "/var/log/*log"},
+    {__path__ = "/logs/*.log"},
+    {__path__ = "/logs/typed-pid-maker*.log"},
+  ]
+  forward_to = [loki.process.add_labels_tpm.receiver]
+}
+
+// Add labels to logs
+loki.process "add_labels_tpm" {
+  forward_to = [loki.write.loki_tpm.receiver]
+
+  stage.static_labels {
+    values = {
+      service_name = "typed-pid-maker",
+      environment = "default",
+      log_source = "alloy",
+    }
+  }
+}
+
+// Export logs to Loki
+loki.write "loki_tpm" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+    tenant_id = "typed-pid-maker"
+  }
+}
+
+// Prometheus metrics scraping
+prometheus.scrape "typed-pid-maker_metrics" {
+  targets = [
+    {"__address__" = "host.docker.internal:8090", "__metrics_path__" = "/actuator/prometheus"},
+  ]
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+  scrape_interval = "5s"
+  scrape_timeout = "4s"  // Must be less than scrape_interval
+  job_name = "typed-pid-maker"
+}
+
+prometheus.scrape "prometheus_metrics" {
+  targets = [
+    {"__address__" = "prometheus:9090"},
+  ]
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+  scrape_interval = "15s"
+  scrape_timeout = "10s"  // Must be less than scrape_interval
+  job_name = "prometheus"
+}
+
+prometheus.scrape "tempo_metrics" {
+  targets = [
+    {"__address__" = "tempo:3200"},
+  ]
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+  scrape_interval = "15s"
+  scrape_timeout = "10s"  // Must be less than scrape_interval
+  job_name = "tempo"
+}
+
+// Export metrics to Prometheus
+prometheus.remote_write "prometheus" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// OTLP receiver for traces and metrics
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Batch processor
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Export metrics via Prometheus exporter
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.prometheus.receiver]
+}
+
+// Export traces to Tempo
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4319"
+    tls {
+      insecure = true
+    }
+  }
+}
